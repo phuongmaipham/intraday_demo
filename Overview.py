@@ -145,6 +145,7 @@ def get_ptf_summary(var, imb, vol, ptf_var=False, imb_breach=False, vol_breach=F
     if imb_breach: imb_str = f'<span class="blink-yellow">{imb_str}</span>'
     if vol_breach: vol_str = f'<span class="blink-yellow">{vol_str}</span>'
     return pnl_str, pos_str, var_str, imb_str, vol_str
+    
 
 def get_ptf_vol():
     return np.random.uniform(3, 7)
