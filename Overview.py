@@ -36,7 +36,6 @@ st.markdown("""
 @st.cache_data(ttl=3600) # Cache for 1 hour
 def fetch_historical_prices(api_key, area_code, end_date, days_to_fetch):
     if not api_key or api_key == "PASTE_YOUR_ENTSOE_API_KEY_HERE":
-        st.error("Using random data.")
         return pd.DataFrame()
     start_date = end_date - timedelta(days=days_to_fetch)
     params = {
