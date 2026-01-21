@@ -69,66 +69,67 @@ def fetch_historical_prices(api_key, area_code, end_date, days_to_fetch):
 
 @st.cache_data(ttl=1)
 def generate_live_hourly_data(fence_active, historical_prices):
-    hours = [f'H{i}' for i in range(1, 25)]
+    hours = [f'H{i}{j}' for i in range(1, 25) for j in ['','-Q1','-Q2','-Q3','-Q4']]
     data = []
     real_prices = historical_prices.iloc[-1].to_dict() if not historical_prices.empty else {}
     for h_num in range(1, 25):
-        h = f"H{h_num}"
-        h_col_index = h_num - 1
-        hourly_series = historical_prices[h_col_index].dropna() if h_col_index in historical_prices.columns else pd.Series()
-        if len(hourly_series) > 5:
-            hourly_vol = hourly_series.std()
-            hourly_var = hourly_vol * 10 
-        else:
-            hourly_vol = np.random.uniform(4, 7)
-            hourly_var = np.random.uniform(35, 80)
-        
-        hourly_imb_mw = np.random.uniform(-4, 4)
-        da = real_prices.get(h_col_index, 50 + np.random.uniform(-6, 6))
-        id_mid = da + np.random.uniform(-1.2, 1.2)
-        lob_mw = np.random.uniform(8, 95)
-        vwap_pct = np.random.uniform(-1.5, 2.0)
-        bid_imb = 0.5 + np.random.uniform(-0.3, 0.4) if vwap_pct > 0 else 0.5 + np.random.uniform(-0.4, 0.3)
-        offer_imb = 1 - bid_imb
-        
-        if lob_mw < 25: size_pct = 0.30
-        elif 25 <= lob_mw <= 40: size_pct = 0.50
-        elif 45 <= lob_mw <= 60: size_pct = 0.75
-        elif lob_mw > 65: size_pct = 1.00
-        elif 40 < lob_mw < 45: size_pct = 0.50
-        else: size_pct = 0.75
-        
-        size_mw = lob_mw * size_pct
-        direction_sign = "+" if (bid_imb > offer_imb) else "-"
-        formatted_size = f"{direction_sign}{size_mw:.0f}MW@{id_mid:.2f}"
-        
-        ppa_pos, id_pos, da_pos = np.random.randint(-50, 50), np.random.randint(-20, 20), np.random.randint(-100, 100)
-        hour_residual = ppa_pos + id_pos + da_pos
-        lob_color = ""
-        shape_color = "🟢" if abs(vwap_pct) > 1.0 else ""
-        action, size = "", ""
-        
-        if fence_active:
-            residual_direction_sign = "-" if (hour_residual > 0) else "+"
-            action, size = "Collar", f"{residual_direction_sign}€{id_mid - 2:.0f}P/€{id_mid + 2:.0f}C"
-        else:
-            if hourly_var < 70 and abs(hourly_imb_mw) < 3 and hourly_vol < 6:
-                if abs(vwap_pct) > 1.1: action, size = "Shape Arb", formatted_size
-                elif abs(lob_mw) > 60: action, size = "Market", formatted_size
-                elif 25 <= abs(lob_mw) <= 40 and max(bid_imb, offer_imb) > 0.7: action, size = "Iceberg", formatted_size
-                elif abs(lob_mw) < 25: action, size = "Ladder", formatted_size
-                elif 25 <= abs(lob_mw) <= 60: action, size = "Leer", formatted_size
+        for quarter in ['', '-Q1', '-Q2', '-Q3', '-Q4']:
+            h = f"H{h_num}{quarter}"
+            h_col_index = h_num - 1
+            hourly_series = historical_prices[h_col_index].dropna() if h_col_index in historical_prices.columns else pd.Series()
+            if len(hourly_series) > 5:
+                hourly_vol = hourly_series.std()
+                hourly_var = hourly_vol * 10 
             else:
-                action, size = "Market", formatted_size
+                hourly_vol = np.random.uniform(4, 7)
+                hourly_var = np.random.uniform(35, 80)
+            
+            hourly_imb_mw = np.random.uniform(-4, 4)
+            da = real_prices.get(h_col_index, 50 + np.random.uniform(-6, 6))
+            id_mid = da + np.random.uniform(-1.2, 1.2)
+            lob_mw = np.random.uniform(8, 95)
+            vwap_pct = np.random.uniform(-1.5, 2.0)
+            bid_imb = 0.5 + np.random.uniform(-0.3, 0.4) if vwap_pct > 0 else 0.5 + np.random.uniform(-0.4, 0.3)
+            offer_imb = 1 - bid_imb
+            
+            if lob_mw < 25: size_pct = 0.30
+            elif 25 <= lob_mw <= 40: size_pct = 0.50
+            elif 45 <= lob_mw <= 60: size_pct = 0.75
+            elif lob_mw > 65: size_pct = 1.00
+            elif 40 < lob_mw < 45: size_pct = 0.50
+            else: size_pct = 0.75
+            
+            size_mw = lob_mw * size_pct
+            direction_sign = "+" if (bid_imb > offer_imb) else "-"
+            formatted_size = f"{direction_sign}{size_mw:.0f}MW@{id_mid:.2f}"
+            
+            ppa_pos, id_pos, da_pos = np.random.randint(-50, 50), np.random.randint(-20, 20), np.random.randint(-100, 100)
+            hour_residual = ppa_pos + id_pos + da_pos
+            lob_color = ""
+            shape_color = "🟢" if abs(vwap_pct) > 1.0 else ""
+            action, size = "", ""
+            
+            if fence_active:
+                residual_direction_sign = "-" if (hour_residual > 0) else "+"
+                action, size = "Collar", f"{residual_direction_sign}€{id_mid - 2:.0f}P/€{id_mid + 2:.0f}C"
+            else:
+                if hourly_var < 70 and abs(hourly_imb_mw) < 3 and hourly_vol < 6:
+                    if abs(vwap_pct) > 1.1: action, size = "Shape Arb", formatted_size
+                    elif abs(lob_mw) > 60: action, size = "Market", formatted_size
+                    elif 25 <= abs(lob_mw) <= 40 and max(bid_imb, offer_imb) > 0.7: action, size = "Iceberg", formatted_size
+                    elif abs(lob_mw) < 25: action, size = "Ladder", formatted_size
+                    elif 25 <= abs(lob_mw) <= 60: action, size = "Leer", formatted_size
+                else:
+                    action, size = "Market", formatted_size
 
-        data.append({
-            'Hour': h, 'DA€': f"{da:.2f}", 'ID Bid€': f"{id_mid - 0.1:.2f}/{int(lob_mw * bid_imb):.0f}MW",
-            'ID Offer€': f"{id_mid + 0.1:.2f}/{int(lob_mw * offer_imb):.0f}MW", 'Mid€': f"{id_mid:.2f}",
-            'LOB MW': f"{int(lob_mw)} {lob_color}", 'Shape': f"{vwap_pct:+.2f}{shape_color}",
-            'Hour Residual': f"{hour_residual} MW", 'Hourly VaR': f"€{hourly_var:.1f}k", 
-            'Hourly Vol': f"€{hourly_vol:.2f}", 'Hourly Imb': f"{hourly_imb_mw:+.1f}MW",
-            'Strategy': f"{action}", 'Size': size
-        })
+            data.append({
+                'Hour': h, 'DA€': f"{da:.2f}", 'ID Bid€': f"{id_mid - 0.1:.2f}/{int(lob_mw * bid_imb):.0f}MW",
+                'ID Offer€': f"{id_mid + 0.1:.2f}/{int(lob_mw * offer_imb):.0f}MW", 'Mid€': f"{id_mid:.2f}",
+                'LOB MW': f"{int(lob_mw)} {lob_color}", 'Shape': f"{vwap_pct:+.2f}{shape_color}",
+                'Hour Residual': f"{hour_residual} MW", 'Hourly VaR': f"€{hourly_var:.1f}k", 
+                'Hourly Vol': f"€{hourly_vol:.2f}", 'Hourly Imb': f"{hourly_imb_mw:+.1f}MW",
+                'Strategy': f"{action}", 'Size': size
+            })
     df = pd.DataFrame(data)
     column_rename_map = {'Hourly VaR': 'Var', 'Hourly Imb': 'Imb', 'Hourly Vol': 'Vol', 'LOB MW': 'LOB', 'Hour Residual': 'Residual'}
     df = df.rename(columns=column_rename_map)
@@ -138,7 +139,7 @@ def generate_live_hourly_data(fence_active, historical_prices):
 
 
 def get_ptf_summary(var, imb, vol, ptf_var=False, imb_breach=False, vol_breach=False):
-    pnl_str, pos_str = f"**P&L: €{pnl}k** / €850k", f"Pos: {pos:+d}MW"
+    pnl_str, pos_str = f"**P&L: €{pnl}k** / €850k", f"Net Pos: {pos:+d}MW"
     var_str, vol_str, imb_str = f'**VaR:** €{var:.1f}k', f'**Vol:** €{vol:.2f}', f'**Imb:** {imb:+.1f}MW'
     if ptf_var: var_str = f'<span class="blink-yellow">{var_str}</span>'
     if imb_breach: imb_str = f'<span class="blink-yellow">{imb_str}</span>'
@@ -198,13 +199,15 @@ iceberg = np.random.randint(10, 20)
 for col, metric in zip(cols, [pnl_str, f"MARKET €{pnl - shape - leer - ladder - iceberg}k", f"SHAPE €{shape}k", f"LEER €{leer}k", f"LADDER €{ladder}k", f"ICEBERG €{iceberg}k"]):
     col.markdown(metric, unsafe_allow_html=True)
 
-cols = st.columns(4)
-bess = np.random.randint(-10, 20)
-wind = np.random.randint(-10, 20)
-for col, metric in zip(cols, [pos_str, f"BESS {bess}MW", f"WIND €{wind}MW", f"SOLAR {pos - bess - wind}MW"]):
+cols = st.columns(6)
+bess = np.random.randint(-10, 10)
+wind = np.random.randint(-10, 10)
+solar = np.random.randint(-10, 10)
+
+for col, metric in zip(cols, [pos_str, f"BESS {bess}MW", f"WIND €{wind}MW", f"SOLAR {solar}MW", f"HYDRO {pos - bess - wind - solar}MW"]):
     col.markdown(metric, unsafe_allow_html=True)
 
-cols = st.columns(3)
+cols = st.columns(6)
 for col, metric in zip(cols, [var_str, vol_str, imb_str]):
     col.markdown(metric, unsafe_allow_html=True)
 
