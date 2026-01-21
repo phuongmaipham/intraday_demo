@@ -176,7 +176,7 @@ def style_dataframe(styler):
 
 # === MAIN DASHBOARD ===
 st.markdown("# 🏦 **Live PNL Trading Dashboard - CH ID**")
-st.markdown(f"**🕐 Live Update:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S CET')} • Auto 1s refresh")
+st.markdown(f"**🕐 Live Update:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S CET')}")
 
 today = datetime.now()
 historical_prices = fetch_historical_prices(ENTSOE_API_KEY, ENTSOE_AREA_CODE, today, days_to_fetch=30)
