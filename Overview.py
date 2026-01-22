@@ -114,9 +114,7 @@ def generate_live_hourly_data(fence_active, historical_prices):
                 residual_direction_sign = "-" if (hour_residual > 0) else "+"
                 action, size = "Collar", f"{residual_direction_sign}€{id_mid - 2:.0f}P/€{id_mid + 2:.0f}C"
             else:
-                if abs(vwap_pct) > 1.1: action, size = "Shape Arb", formatted_size
-                elif id_mid > abs(vwap_pct)+atr: action, size = "Momentum", formatted_size
-                elif abs(lob_mw) > 60: action, size = "Market", formatted_size
+                if abs(lob_mw) > 60: action, size = "Market", formatted_size
                 elif 25 <= abs(lob_mw) <= 40 and max(bid_imb, offer_imb) > 0.7: action, size = "Iceberg", formatted_size
                 elif abs(lob_mw) < 25: action, size = "Ladder", formatted_size
                 elif 25 <= abs(lob_mw) <= 60: action, size = "Leer", formatted_size
@@ -209,12 +207,8 @@ bess = np.random.randint(-10, 10)
 wind = np.random.randint(-10, 10)
 solar = np.random.randint(-10, 10)
 
-for col, metric in zip(cols, ["15 Mins Pos: ", f"BESS {bess}MW", f"WIND €{wind}MW", f"SOLAR {solar}MW"]):
+for col, metric in zip(cols, [pos_str, f"BESS {bess}MW", f"WIND €{wind}MW", f"SOLAR {solar}MW", f"HYDRO {pos - bess - wind - solar}MW"]):
     col.markdown(metric, unsafe_allow_html=True)
-
-for col, metric in zip(cols, ["60 Mins Pos: ", f"HYDRO {pos - bess - wind - solar}MW"]):
-    col.markdown(metric, unsafe_allow_html=True)
-st.markdown(pos_str)
 
 
 df = generate_live_hourly_data(fence_active, historical_prices)
