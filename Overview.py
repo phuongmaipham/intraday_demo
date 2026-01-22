@@ -32,6 +32,7 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+atr = round(np.random.uniform(50, 60),2)
 
 @st.cache_data(ttl=3600) # Cache for 1 hour
 def fetch_historical_prices(api_key, area_code, end_date, days_to_fetch):
@@ -113,14 +114,12 @@ def generate_live_hourly_data(fence_active, historical_prices):
                 residual_direction_sign = "-" if (hour_residual > 0) else "+"
                 action, size = "Collar", f"{residual_direction_sign}€{id_mid - 2:.0f}P/€{id_mid + 2:.0f}C"
             else:
-                if hourly_var < 70 and abs(hourly_imb_mw) < 3 and hourly_vol < 6:
-                    if abs(vwap_pct) > 1.1: action, size = "Shape Arb", formatted_size
-                    elif abs(lob_mw) > 60: action, size = "Market", formatted_size
-                    elif 25 <= abs(lob_mw) <= 40 and max(bid_imb, offer_imb) > 0.7: action, size = "Iceberg", formatted_size
-                    elif abs(lob_mw) < 25: action, size = "Ladder", formatted_size
-                    elif 25 <= abs(lob_mw) <= 60: action, size = "Leer", formatted_size
-                else:
-                    action, size = "Market", formatted_size
+                if abs(vwap_pct) > 1.1: action, size = "Shape Arb", formatted_size
+                elif id_mid > abs(vwap_pct)+atr: action, size = "Momentum", formatted_size
+                elif abs(lob_mw) > 60: action, size = "Market", formatted_size
+                elif 25 <= abs(lob_mw) <= 40 and max(bid_imb, offer_imb) > 0.7: action, size = "Iceberg", formatted_size
+                elif abs(lob_mw) < 25: action, size = "Ladder", formatted_size
+                elif 25 <= abs(lob_mw) <= 60: action, size = "Leer", formatted_size
 
             data.append({
                 'Hour': h, 'DA€': f"{da:.2f}", 'ID Bid€': f"{id_mid - 0.1:.2f}/{int(lob_mw * bid_imb):.0f}MW",
@@ -145,7 +144,6 @@ def get_ptf_summary(var, imb, vol, ptf_var=False, imb_breach=False, vol_breach=F
     if imb_breach: imb_str = f'<span class="blink-yellow">{imb_str}</span>'
     if vol_breach: vol_str = f'<span class="blink-yellow">{vol_str}</span>'
     return pnl_str, pos_str, var_str, imb_str, vol_str
-    
 
 def get_ptf_vol():
     return np.random.uniform(3, 7)
@@ -192,28 +190,37 @@ fence_active = var_breach or imb_breach or vol_breach
 pnl_str, pos_str, var_str, vol_str, imb_str = get_ptf_summary(ptf_var, imb, ptf_vol, var_breach, imb_breach, vol_breach)
 
 st.markdown("## 📈 **PTF Summary**")
-cols = st.columns(6)
+cols = st.columns(7)
 shape = np.random.randint(-10, 20)
+momentum = np.random.randint(-10, 20)
 leer = np.random.randint(10, 20)
 ladder = np.random.randint(10, 20)
 iceberg = np.random.randint(10, 20)
-for col, metric in zip(cols, [pnl_str, f"MARKET €{pnl - shape - leer - ladder - iceberg}k", f"SHAPE €{shape}k", f"LEER €{leer}k", f"LADDER €{ladder}k", f"ICEBERG €{iceberg}k"]):
+for col, metric in zip(cols, [pnl_str, f"MARKET €{pnl - shape - leer - ladder - iceberg - momentum}k", f"SHAPE €{shape}k", f"MOMENTUM €{momentum}k", f"LEER €{leer}k", f"LADDER €{ladder}k", f"ICEBERG €{iceberg}k"]):
     col.markdown(metric, unsafe_allow_html=True)
 
-cols = st.columns(6)
+cols = st.columns(7)
+for col, metric in zip(cols, [var_str, vol_str, imb_str]):
+    col.markdown(metric, unsafe_allow_html=True)
+
+
+cols = st.columns(7)
 bess = np.random.randint(-10, 10)
 wind = np.random.randint(-10, 10)
 solar = np.random.randint(-10, 10)
 
-for col, metric in zip(cols, [pos_str, f"BESS {bess}MW", f"WIND €{wind}MW", f"SOLAR {solar}MW", f"HYDRO {pos - bess - wind - solar}MW"]):
+for col, metric in zip(cols, ["15 Mins Pos: ", f"BESS {bess}MW", f"WIND €{wind}MW", f"SOLAR {solar}MW"]):
     col.markdown(metric, unsafe_allow_html=True)
 
-cols = st.columns(6)
-for col, metric in zip(cols, [var_str, vol_str, imb_str]):
+for col, metric in zip(cols, ["60 Mins Pos: ", f"HYDRO {pos - bess - wind - solar}MW"]):
     col.markdown(metric, unsafe_allow_html=True)
+st.markdown(pos_str)
+
 
 df = generate_live_hourly_data(fence_active, historical_prices)
 st.dataframe(df.style.pipe(style_dataframe), use_container_width=True, hide_index=True, height=870)
+
+st.caption(f'ATR: {atr}',)
 
 time.sleep(1)
 st.rerun()
