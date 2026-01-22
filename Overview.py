@@ -194,7 +194,7 @@ momentum = np.random.randint(-10, 20)
 leer = np.random.randint(10, 20)
 ladder = np.random.randint(10, 20)
 iceberg = np.random.randint(10, 20)
-for col, metric in zip(cols, [pnl_str, f"MARKET €{pnl - shape - leer - ladder - iceberg - momentum}k", f"SHAPE €{shape}k", f"MOMENTUM €{momentum}k", f"LEER €{leer}k", f"LADDER €{ladder}k", f"ICEBERG €{iceberg}k"]):
+for col, metric in zip(cols, [pnl_str, f"MARKET €{pnl - shape - leer - ladder - iceberg - momentum}k", f"LEER €{leer}k", f"LADDER €{ladder}k", f"ICEBERG €{iceberg}k"]):
     col.markdown(metric, unsafe_allow_html=True)
 
 cols = st.columns(7)
